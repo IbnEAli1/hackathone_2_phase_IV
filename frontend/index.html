@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K8s Web App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #38bdf8;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: #38bdf8;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .dot.ok { background: #22c55e; }
+
+    pre {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .items-list {
+      list-style: none;
+    }
+
+    .items-list li {
+      padding: 0.75rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .items-list li:last-child { border-bottom: none; }
+
+    .item-name {
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .item-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 0.25rem;
+    }
+
+    .error { color: #f87171; }
+
+    .loading { color: #94a3b8; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>K8s Web App</h1>
+  <p class="subtitle">Kubernetes Deployed Web Application</p>
+
+  <!-- Backend Status Card -->
+  <div class="card">
+    <h2>Backend Status</h2>
+    <div class="status">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text" class="loading">Checking...</span>
+    </div>
+    <pre id="info-output">Loading backend info...</pre>
+  </div>
+
+  <!-- Items Card -->
+  <div class="card">
+    <h2>API Items</h2>
+    <ul class="items-list" id="items-list">
+      <li class="loading">Fetching items...</li>
+    </ul>
+  </div>
+
+  <script>
+    const API_BASE = "/api";
+
+    async function checkHealth() {
+      const dot = document.getElementById("status-dot");
+      const text = document.getElementById("status-text");
+      try {
+        const res = await fetch("/healthz");
+        const data = await res.json();
+        dot.classList.add("ok");
+        text.textContent = `Healthy — ${data.timestamp}`;
+      } catch {
+        dot.classList.remove("ok");
+        text.innerHTML = '<span class="error">Unreachable</span>';
+      }
+    }
+
+    async function fetchInfo() {
+      const output = document.getElementById("info-output");
+      try {
+        const res = await fetch(`${API_BASE}/info`);
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch {
+        output.innerHTML = '<span class="error">Failed to load backend info</span>';
+      }
+    }
+
+    async function fetchItems() {
+      const list = document.getElementById("items-list");
+      try {
+        const res = await fetch(`${API_BASE}/items`);
+        const items = await res.json();
+        list.innerHTML = items
+          .map(
+            (item) => `
+            <li>
+              <div class="item-name">${item.name}</div>
+              <div class="item-desc">${item.description}</div>
+            </li>`
+          )
+          .join("");
+      } catch {
+        list.innerHTML = '<li class="error">Failed to load items</li>';
+      }
+    }
+
+    checkHealth();
+    fetchInfo();
+    fetchItems();
+
+    // Refresh health check every 30s
+    setInterval(checkHealth, 30000);
+  </script>
+</body>
+</html>
