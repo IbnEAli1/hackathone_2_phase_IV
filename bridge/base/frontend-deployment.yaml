@@ -1,0 +1,32 @@
+#! frontend-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: frontend
+    namespace: hackathone-2-phase-iv
+    labels:
+        com.docker.compose.project: hackathone_2_phase_iv
+        com.docker.compose.service: frontend
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: hackathone_2_phase_iv
+            com.docker.compose.service: frontend
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: hackathone_2_phase_iv
+                com.docker.compose.service: frontend
+                com.docker.compose.network.default: "true"
+        spec:
+            containers:
+                - name: frontend
+                  image: hackathone_2_phase_iv-frontend
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                    - name: frontend-80
+                      containerPort: 80

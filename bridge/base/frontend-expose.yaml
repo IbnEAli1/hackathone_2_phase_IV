@@ -1,0 +1,18 @@
+#! frontend-expose.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Service
+metadata:
+    name: frontend
+    namespace: hackathone-2-phase-iv
+    labels:
+        com.docker.compose.project: hackathone_2_phase_iv
+        com.docker.compose.service: frontend
+spec:
+    selector:
+        com.docker.compose.project: hackathone_2_phase_iv
+        com.docker.compose.service: frontend
+    ports:
+        - name: frontend-80
+          port: 80
+          targetPort: frontend-80

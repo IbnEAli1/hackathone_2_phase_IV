@@ -1,0 +1,8 @@
+#! 0-hackathone-2-phase-iv-namespace.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: hackathone-2-phase-iv
+    labels:
+        com.docker.compose.project: hackathone_2_phase_iv

@@ -1,0 +1,45 @@
+#! backend-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: backend
+    namespace: hackathone-2-phase-iv
+    labels:
+        com.docker.compose.project: hackathone_2_phase_iv
+        com.docker.compose.service: backend
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: hackathone_2_phase_iv
+            com.docker.compose.service: backend
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: hackathone_2_phase_iv
+                com.docker.compose.service: backend
+                com.docker.compose.network.default: "true"
+        spec:
+            containers:
+                - name: backend
+                  image: hackathone_2_phase_iv-backend
+                  imagePullPolicy: IfNotPresent
+                  env:
+                    - name: ALLOWED_ORIGINS
+                      value: "http://localhost:8080,http://localhost:3000"
+                    - name: API_KEY
+                      value: "dev-api-key"
+                    - name: DATABASE_URL
+                      value: "postgresql://user:password@db:5432/webapp"
+                    - name: JWT_SECRET
+                      value: "dev-secret-change-in-production"
+                    - name: NODE_ENV
+                      value: "development"
+                    - name: PORT
+                      value: "3000"
+                  ports:
+                    - name: backend-3000
+                      containerPort: 3000
