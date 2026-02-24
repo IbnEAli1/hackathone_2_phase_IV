@@ -31,3 +31,7 @@ build/
 
 # Coverage
 coverage/
+
+# Binaries
+*.exe
+*.bin

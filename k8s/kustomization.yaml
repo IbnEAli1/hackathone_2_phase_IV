@@ -7,6 +7,12 @@ resources:
   # Namespace
   - namespace.yaml
 
+  # PostgreSQL
+  - postgres/secret.yaml
+  - postgres/pvc.yaml
+  - postgres/deployment.yaml
+  - postgres/service.yaml
+
   # Frontend
   - frontend/configmap.yaml
   - frontend/deployment.yaml
