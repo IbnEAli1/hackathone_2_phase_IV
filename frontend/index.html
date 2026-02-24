@@ -96,8 +96,86 @@
     }
 
     .error { color: #f87171; }
-
+    .success { color: #4ade80; }
     .loading { color: #94a3b8; font-style: italic; }
+
+    /* Auth & Forms */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #38bdf8;
+    }
+
+    textarea { resize: vertical; min-height: 60px; }
+
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    button {
+      padding: 0.5rem 1.25rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    .btn-primary:hover { background: #7dd3fc; }
+
+    .btn-secondary {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    .btn-secondary:hover { background: #475569; }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-danger:hover { background: #f87171; }
+
+    .auth-status {
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #msg { font-size: 0.85rem; min-height: 1.2em; margin-top: 0.5rem; }
+    #item-msg { font-size: 0.85rem; min-height: 1.2em; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -114,6 +192,45 @@
     <pre id="info-output">Loading backend info...</pre>
   </div>
 
+  <!-- Auth Card -->
+  <div class="card">
+    <h2>Authentication</h2>
+    <div class="auth-status">
+      <span id="auth-label" class="loading">Not logged in</span>
+      <button class="btn-danger" id="logout-btn" style="display:none" onclick="logout()">Logout</button>
+    </div>
+    <div id="auth-form">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="username" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="password" />
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="login()">Login</button>
+        <button class="btn-secondary" onclick="register()">Register</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+  <!-- Create Item Card -->
+  <div class="card" id="create-card" style="display:none">
+    <h2>Create Item</h2>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="item-name" placeholder="Item name" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="item-desc" placeholder="Optional description"></textarea>
+    </div>
+    <button class="btn-primary" onclick="createItem()">Add Item</button>
+    <div id="item-msg"></div>
+  </div>
+
   <!-- Items Card -->
   <div class="card">
     <h2>API Items</h2>
@@ -124,6 +241,108 @@
 
   <script>
     const API_BASE = "/api";
+    const API_KEY = "dev-api-key"; // matches docker-compose default; update for prod
+
+    function getToken() { return localStorage.getItem("token"); }
+    function getUsername() { return localStorage.getItem("username"); }
+
+    function authHeaders() {
+      const h = { "Content-Type": "application/json", "X-API-Key": API_KEY };
+      const token = getToken();
+      if (token) h["Authorization"] = `Bearer ${token}`;
+      return h;
+    }
+
+    function updateAuthUI() {
+      const token = getToken();
+      const label = document.getElementById("auth-label");
+      const logoutBtn = document.getElementById("logout-btn");
+      const authForm = document.getElementById("auth-form");
+      const createCard = document.getElementById("create-card");
+
+      if (token) {
+        label.textContent = `Logged in as ${getUsername()}`;
+        label.className = "success";
+        logoutBtn.style.display = "inline-block";
+        authForm.style.display = "none";
+        createCard.style.display = "block";
+      } else {
+        label.textContent = "Not logged in";
+        label.className = "loading";
+        logoutBtn.style.display = "none";
+        authForm.style.display = "block";
+        createCard.style.display = "none";
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      updateAuthUI();
+    }
+
+    async function register() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+      if (!username || !password) { msg.innerHTML = '<span class="error">Username and password required</span>'; return; }
+      try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.innerHTML = `<span class="error">${data.error}</span>`; return; }
+        msg.innerHTML = '<span class="success">Registered! Please log in.</span>';
+      } catch {
+        msg.innerHTML = '<span class="error">Request failed</span>';
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+      if (!username || !password) { msg.innerHTML = '<span class="error">Username and password required</span>'; return; }
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.innerHTML = `<span class="error">${data.error}</span>`; return; }
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("username", username);
+        updateAuthUI();
+        fetchItems();
+      } catch {
+        msg.innerHTML = '<span class="error">Request failed</span>';
+      }
+    }
+
+    async function createItem() {
+      const name = document.getElementById("item-name").value.trim();
+      const description = document.getElementById("item-desc").value.trim();
+      const msg = document.getElementById("item-msg");
+      if (!name) { msg.innerHTML = '<span class="error">Name is required</span>'; return; }
+      try {
+        const res = await fetch(`${API_BASE}/items`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ name, description }),
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.innerHTML = `<span class="error">${data.error}</span>`; return; }
+        msg.innerHTML = '<span class="success">Item created!</span>';
+        document.getElementById("item-name").value = "";
+        document.getElementById("item-desc").value = "";
+        fetchItems();
+      } catch {
+        msg.innerHTML = '<span class="error">Request failed</span>';
+      }
+    }
 
     async function checkHealth() {
       const dot = document.getElementById("status-dot");
@@ -142,7 +361,7 @@
     async function fetchInfo() {
       const output = document.getElementById("info-output");
       try {
-        const res = await fetch(`${API_BASE}/info`);
+        const res = await fetch(`${API_BASE}/info`, { headers: { "X-API-Key": API_KEY } });
         const data = await res.json();
         output.textContent = JSON.stringify(data, null, 2);
       } catch {
@@ -153,14 +372,18 @@
     async function fetchItems() {
       const list = document.getElementById("items-list");
       try {
-        const res = await fetch(`${API_BASE}/items`);
+        const res = await fetch(`${API_BASE}/items`, { headers: { "X-API-Key": API_KEY } });
         const items = await res.json();
+        if (!items.length) {
+          list.innerHTML = '<li class="loading">No items yet. Create one above!</li>';
+          return;
+        }
         list.innerHTML = items
           .map(
             (item) => `
             <li>
               <div class="item-name">${item.name}</div>
-              <div class="item-desc">${item.description}</div>
+              <div class="item-desc">${item.description || ""}</div>
             </li>`
           )
           .join("");
@@ -169,11 +392,11 @@
       }
     }
 
+    // Init
+    updateAuthUI();
     checkHealth();
     fetchInfo();
     fetchItems();
-
-    // Refresh health check every 30s
     setInterval(checkHealth, 30000);
   </script>
 </body>
